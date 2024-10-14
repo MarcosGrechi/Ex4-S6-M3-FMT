@@ -1,0 +1,55 @@
+package br.senai.exS6.service;
+
+import br.senai.exS6.exceptions.QuantidadeEstoqueInvalidaException;
+import br.senai.exS6.model.Estoque;
+import br.senai.exS6.model.Remedio;
+import br.senai.exS6.repository.EstoqueRepository;
+import br.senai.exS6.repository.RemedioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EstoqueServiceImpl implements EstoqueService {
+
+    @Autowired
+    private EstoqueRepository estoqueRepository;
+
+    @Autowired
+    private RemedioRepository remedioRepository;
+
+    @Override
+    public void adicionarEstoque(Integer idRemedio, Integer quantidade) {
+        if (quantidade == null || quantidade < 0) {
+            throw new QuantidadeEstoqueInvalidaException("Quantidade não pode ser negativa");
+        }
+
+        Remedio remedio = remedioRepository.getRemedioPorId(idRemedio);
+        if (remedio == null) {
+            throw new RuntimeException("Remédio não encontrado");
+        }
+
+        Estoque estoqueAtual = estoqueRepository.getEstoqueAtual(idRemedio);
+        if (estoqueAtual == null) {
+            Estoque novoEstoque = new Estoque(remedio.getId(), quantidade);
+            estoqueRepository.save(novoEstoque);
+        } else {
+            estoqueAtual.setQuantidade(estoqueAtual.getQuantidade() + quantidade);
+            estoqueRepository.save(estoqueAtual);
+        }
+    }
+
+    private Estoque criarOuAtualizarEstoque(Integer idRemedio, Integer quantidade) {
+        Estoque estoqueAtual = estoqueRepository.getEstoqueAtual(idRemedio);
+        if (estoqueAtual == null) {
+            return new Estoque(idRemedio, quantidade);
+        }
+        estoqueAtual.setQuantidade(estoqueAtual.getQuantidade() + quantidade);
+        return estoqueAtual;
+    }
+
+    private void validarQuantidade(Integer quantidade) {
+        if (quantidade == null || quantidade < 0) {
+            throw new QuantidadeEstoqueInvalidaException("Quantidade não pode ser negativa");
+        }
+    }
+}
